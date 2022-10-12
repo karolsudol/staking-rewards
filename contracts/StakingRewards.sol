@@ -12,7 +12,7 @@ contract StakingRewards is AccessControl {
     uint256 public immutable _minStakingTime = 1 weeks;
 
     IERC20 public immutable stakingToken;
-    IERC20 public immutable rewardsToken;
+    ERC20 public immutable rewardsToken;
 
     uint256 public rewardRate;
     uint256 public minStakingTime;
@@ -85,7 +85,7 @@ contract StakingRewards is AccessControl {
     function claim() external updateReward(msg.sender) returns (bool) {
         uint256 reward = stakers[msg.sender].reward;
         rewardsToken.transfer(msg.sender, reward);
-        stakers[msg.sender].rewardsAvailable = 0;
+        stakers[msg.sender].reward = 0;
         rewardsToken.decreaseAllowance(msg.sender, reward);
 
         return true;
@@ -99,7 +99,7 @@ contract StakingRewards is AccessControl {
 
         stakers[msg.sender].stake += amount;
         stakingToken.transferFrom(msg.sender, address(this), amount);
-        stakers[msg.sender].lastStakeTime = block.timestamp;
+        stakers[msg.sender].lastStakedAt = block.timestamp;
 
         emit Stake(msg.sender, amount);
         return true;
@@ -124,7 +124,7 @@ contract StakingRewards is AccessControl {
             (rewardStartAt * 1 weeks);
 
         for (uint256 i = 0; i < coefficient; i++) {
-            stakers[staker].rewardsAvailable +=
+            stakers[staker].reward +=
                 (stakers[staker].stake * rewardRate * 100) /
                 10000;
         }
