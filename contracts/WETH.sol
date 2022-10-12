@@ -15,7 +15,9 @@ contract WETH is ERC20("Wrapped Ether", "WETH") {
 
     /* ======================= CONSTRUCTOR ======================= */
 
-    constructor(address _stakingContract) public {}
+    constructor(address _stakingContract) public {
+        owner = _stakingContract;
+    }
 
     /* ======================= MODIFIERS ======================= */
 

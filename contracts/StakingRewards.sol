@@ -7,20 +7,22 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract StakingRewards is AccessControl {
     /* ======================= STATE VARS ======================= */
+
+    uint256 public immutable _rewardRate = 1;
+    uint256 public immutable _minStakingTime = 1 weeks;
+
     IERC20 public immutable stakingToken;
     IERC20 public immutable rewardsToken;
 
-    uint256 public rawardRate;
-    uint256 public minStakeTime;
-    uint256 public startAt;
-    uint256 public finishAt;
-    uint256 public duration;
+    uint256 public rewardRate;
+    uint256 public minStakingTime;
+    uint256 public rewardStartAt;
 
     address public owner;
 
     struct Staker {
         uint256 stake;
-        uint256 updatedAt;
+        uint256 lastStakedAt;
         uint256 reward;
     }
 
@@ -32,9 +34,9 @@ contract StakingRewards is AccessControl {
         owner = msg.sender;
         stakingToken = IERC20(_stakingToken);
         rewardsToken = ERC20(_rewardsToken);
-        rewardRate = 20;
-        minStakeTimeMins = 10;
-        rewardStartsAt = 20;
+        rewardRate = _rewardRate;
+        minStakingTime = _minStakingTime;
+        rewardStartAt = _minStakingTime;
     }
 
     /* ======================= Events ======================= */
@@ -49,9 +51,9 @@ contract StakingRewards is AccessControl {
         _;
     }
 
-    modifier checkStakingTime() {
+    modifier verifyStakingTime() {
         require(
-            stakers[msg.sender].lastStakedAt + minStakeTimeMins * 1 minutes <
+            stakers[msg.sender].lastStakedAt + minStakingTime * 1 weeks <
                 block.timestamp,
             "stake in progress"
         );
@@ -60,17 +62,72 @@ contract StakingRewards is AccessControl {
 
     modifier updateReward(address staker) {
         require(
-            stakers[staker].lastStakeTime + rewardStartsAt * 1 minutes <
+            stakers[staker].lastStakedAt + minStakingTime * 1 weeks <
                 block.timestamp,
-            "Rewards are not available yet"
+            "stake in progress"
         );
-        stakeholders[stakeholder].rewardsAvailable = _calculateReward(
-            msg.sender
-        );
-        _approveRewards(
-            stakeholder,
-            stakeholders[stakeholder].rewardsAvailable
-        );
+        stakers[staker].reward = _calculateReward(msg.sender);
+        rewardsToken.increaseAllowance(staker, stakers[staker].reward);
         _;
+    }
+
+    /* ======================= PUBLIC VIEW FUNCTIONS ======================= */
+
+    function getStake(address staker) external view returns (uint256) {
+        return stakers[staker].stake;
+    }
+
+    function getRewards(address staker) external view returns (uint256) {
+        return stakers[staker].reward;
+    }
+
+    /* ======================= PUBLIC STATE CHANGING FUNCTIONS ======================= */
+    function claim() external updateReward(msg.sender) returns (bool) {
+        uint256 reward = stakers[msg.sender].reward;
+        rewardsToken.transfer(msg.sender, reward);
+        stakers[msg.sender].rewardsAvailable = 0;
+        rewardsToken.decreaseAllowance(msg.sender, reward);
+
+        return true;
+    }
+
+    function stake(uint256 amount) external returns (bool) {
+        require(
+            stakingToken.balanceOf(msg.sender) >= amount,
+            "funds insufficient"
+        );
+
+        stakers[msg.sender].stake += amount;
+        stakingToken.transferFrom(msg.sender, address(this), amount);
+        stakers[msg.sender].lastStakeTime = block.timestamp;
+
+        emit Stake(msg.sender, amount);
+        return true;
+    }
+
+    function unstake(uint256 amount) external verifyStakingTime returns (bool) {
+        require(
+            stakers[msg.sender].stake >= amount,
+            "Claimed amount exceeds the stake"
+        );
+        stakingToken.transfer(msg.sender, amount);
+        stakers[msg.sender].stake -= amount;
+        emit Unstake(msg.sender, amount);
+
+        return true;
+    }
+
+    /* ======================= PRIVATE FUNCTIONS ======================= */
+
+    function _calculateReward(address staker) internal returns (uint256) {
+        uint256 coefficient = (block.timestamp - stakers[staker].lastStakedAt) /
+            (rewardStartAt * 1 weeks);
+
+        for (uint256 i = 0; i < coefficient; i++) {
+            stakers[staker].rewardsAvailable +=
+                (stakers[staker].stake * rewardRate * 100) /
+                10000;
+        }
+        return stakers[staker].reward;
     }
 }
