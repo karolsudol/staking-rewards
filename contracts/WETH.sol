@@ -15,7 +15,7 @@ contract WETH is ERC20("Wrapped Ether", "WETH") {
 
     /* ======================= CONSTRUCTOR ======================= */
 
-    constructor(address _stakingContract) public {
+    constructor(address _stakingContract) {
         owner = _stakingContract;
     }
 
@@ -42,7 +42,7 @@ contract WETH is ERC20("Wrapped Ether", "WETH") {
         emit Withdrawal(msg.sender, amount);
     }
 
-    receive() external payable virtual {
-        deposit();
-    }
+    // receive() external payable virtual {
+    //     deposit();
+    // }
 }
