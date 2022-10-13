@@ -50,10 +50,10 @@ contract StakingRewards is AccessControl {
 
     /* ======================= MODIFIERS ======================= */
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "not authorized");
-        _;
-    }
+    // modifier onlyOwner() {
+    //     require(msg.sender == owner, "not authorized");
+    //     _;
+    // }
 
     modifier verifyStakingTime() {
         require(
@@ -123,7 +123,9 @@ contract StakingRewards is AccessControl {
             (rewardStartAt * 1 minutes);
 
         for (uint256 i = 0; i < coefficient; i++) {
-            stakers[staker].reward += (stakers[staker].stake * rewardRate) / 10000;
+            stakers[staker].reward +=
+                (stakers[staker].stake * rewardRate) /
+                10000;
         }
         return stakers[staker].reward;
     }

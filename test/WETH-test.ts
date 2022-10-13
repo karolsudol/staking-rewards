@@ -1,8 +1,10 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import "@nomiclabs/hardhat-ethers";
 
 describe("CONTRACT:WETH", function () {
+  const provider = ethers.providers.Provider;
   async function deployWETH() {
     const [owner, acc1, acc2] = await ethers.getSigners();
     const WETH = await ethers.getContractFactory("WETH");
@@ -31,9 +33,9 @@ describe("CONTRACT:WETH", function () {
       const totalSupply = await weth.totalSupply();
 
       // revert
-      await expect(
-        weth.connect(acc1).deposit({ value: ethers.utils.parseEther("1.0") })
-      ).to.be.revertedWith("only owner");
+      await expect(weth.connect(acc1).withdraw(1)).to.be.revertedWith(
+        "only owner"
+      );
     });
   });
 });
