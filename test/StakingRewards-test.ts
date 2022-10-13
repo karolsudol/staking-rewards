@@ -122,7 +122,10 @@ describe("Tests for StakingRewards Contract as:", function () {
       await stakingToken.connect(acc1).approve(staking.address, 10);
       await staking.connect(acc1).stake(10);
 
-      await ethers.provider.send("evm_increaseTime", [weekInSeconds + 60]);
+      // 2 weeks passed
+      await ethers.provider.send("evm_increaseTime", [
+        weekInSeconds + weekInSeconds + 60,
+      ]);
 
       staking.connect(acc1).claim();
       expect(await staking.getRewards(acc1.address)).to.be.equal(0);
