@@ -5,7 +5,9 @@ import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-describe("CONTRACT: ***StakingRewards tests***", function () {
+const weekInSeconds = 7 * 24 * 60 * 60;
+
+describe("Tests for StakingRewards Contract as:", function () {
   async function deployStakingRewards() {
     const [owner, acc1, acc2] = await ethers.getSigners();
 
@@ -30,6 +32,17 @@ describe("CONTRACT: ***StakingRewards tests***", function () {
   }
 
   describe("STAKING", function () {
+    it("Should revert staking correctly", async function () {
+      const { staking, acc1, stakingToken } = await loadFixture(
+        deployStakingRewards
+      );
+      // minted only 10 but required approval 10 x 100
+      await stakingToken.connect(acc1).approve(staking.address, 10 * 100);
+      await expect(staking.connect(acc1).stake(10 * 100)).to.be.revertedWith(
+        "funds insufficient"
+      );
+    });
+
     it("Should stake correctly", async function () {
       const { staking, acc1, stakingToken } = await loadFixture(
         deployStakingRewards
@@ -39,7 +52,6 @@ describe("CONTRACT: ***StakingRewards tests***", function () {
       expect(await staking.getStake(acc1.address)).to.be.equal(0);
 
       // 2. acc1 approve to spend and then stakes 10 => emits event
-
       await stakingToken.connect(acc1).approve(staking.address, 10);
       await expect(staking.connect(acc1).stake(10))
         .to.emit(staking, "Stake")
@@ -48,146 +60,72 @@ describe("CONTRACT: ***StakingRewards tests***", function () {
       expect(await staking.getStake(acc1.address)).to.be.equal(10);
     });
 
-    it("Should revert staking if insufficient funds", async function () {
+    it("Should revert un-staking correctly", async function () {
       const { staking, acc1, stakingToken } = await loadFixture(
         deployStakingRewards
       );
 
-      // minted only 10
-      await stakingToken.connect(acc1).approve(staking.address, 10 * 100);
-      await expect(staking.connect(acc1).stake(10 * 100)).to.be.revertedWith(
+      // 1. stake 10
+      await stakingToken.connect(acc1).approve(staking.address, 10);
+      await staking.connect(acc1).stake(10);
+
+      // 2. week has not passed
+      await expect(staking.connect(acc1).unstake(5)).to.be.revertedWith(
+        "stake in progress"
+      );
+
+      // 3. week passed but wants to unstake more than it has
+      await ethers.provider.send("evm_increaseTime", [weekInSeconds + 60]);
+      await expect(staking.connect(acc1).unstake(15)).to.be.revertedWith(
         "funds insufficient"
       );
     });
 
-    it("Should unstake correctly", async function () {
+    it("Should un-stake correctly", async function () {
       const { staking, acc1, stakingToken } = await loadFixture(
         deployStakingRewards
       );
       // 1.stake 10 for 1 week as min
-      await stakingToken.connect(acc1).approve(staking.address, 20);
+      await stakingToken.connect(acc1).approve(staking.address, 10);
       await staking.connect(acc1).stake(10);
 
-      await ethers.provider.send("evm_increaseTime", [604800 * 10099999]);
+      await ethers.provider.send("evm_increaseTime", [weekInSeconds + 60]);
 
-      const tx = staking.connect(acc1).unstake(5);
-      await expect(tx).to.emit(staking, "Unstake").withArgs(acc1.address, 5);
+      // 2. Unstake after one week and 1 min
+      await expect(staking.connect(acc1).unstake(5))
+        .to.emit(staking, "Unstake")
+        .withArgs(acc1.address, 5);
 
-      const new_stake = await staking.getStakeholderStake(acc1.address);
-      expect(new_stake).to.be.equal(5);
+      expect(await staking.getStake(acc1.address)).to.be.equal(5);
     });
-
-    // it('Should revert unstaking LP tokens', async function () {
-
-    //     await stakingToken.connect(addr1).approve(staking.address, 20);
-    //     await staking.connect(addr1).stake(10);
-
-    //     const tx = staking.connect(addr1).unstake(5);
-    //     await expect(tx).to.be.revertedWith("Stake is still freezed");
-
-    //     await ethers.provider.send("evm_increaseTime", [1500]);
-    //     const tx1 = staking.connect(addr1).unstake(15);
-    //     await expect(tx1).to.be.revertedWith("Claimed amount exceeds the stake");
-
-    // });
   });
 
-  // describe("Deployment", function () {
-  //   it("Should set the right unlockTime", async function () {
-  //     const { lock, unlockTime } = await loadFixture(deployOneYearLockFixture);
+  describe("CLAIMING", function () {
+    it("Should revert claiming rewards correctly", async function () {
+      const { staking, acc1, stakingToken } = await loadFixture(
+        deployStakingRewards
+      );
+      // staked with min 1 week
+      await stakingToken.connect(acc1).approve(staking.address, 10);
+      await staking.connect(acc1).stake(10);
+      await expect(staking.connect(acc1).claim()).to.be.revertedWith(
+        "stake in progress"
+      );
+    });
 
-  //     expect(await lock.unlockTime()).to.equal(unlockTime);
-  //   });
+    it("Should claim rewards correctly", async function () {
+      const { staking, acc1, stakingToken } = await loadFixture(
+        deployStakingRewards
+      );
 
-  //   it("Should set the right owner", async function () {
-  //     const { lock, owner } = await loadFixture(deployOneYearLockFixture);
+      // staked 10 with min 1 week
+      await stakingToken.connect(acc1).approve(staking.address, 10);
+      await staking.connect(acc1).stake(10);
 
-  //     expect(await lock.owner()).to.equal(owner.address);
-  //   });
+      await ethers.provider.send("evm_increaseTime", [weekInSeconds + 60]);
 
-  //   it("Should receive and store the funds to lock", async function () {
-  //     const { lock, lockedAmount } = await loadFixture(
-  //       deployOneYearLockFixture
-  //     );
-
-  //     expect(await ethers.provider.getBalance(lock.address)).to.equal(
-  //       lockedAmount
-  //     );
-  //   });
-
-  //   it("Should fail if the unlockTime is not in the future", async function () {
-  //     // We don't use the fixture here because we want a different deployment
-  //     const latestTime = await time.latest();
-  //     const Lock = await ethers.getContractFactory("Lock");
-  //     await expect(Lock.deploy(latestTime, { value: 1 })).to.be.revertedWith(
-  //       "Unlock time should be in the future"
-  //     );
-  //   });
-  // });
-
-  // describe("Withdrawals", function () {
-  //   describe("Validations", function () {
-  //     it("Should revert with the right error if called too soon", async function () {
-  //       const { lock } = await loadFixture(deployOneYearLockFixture);
-
-  //       await expect(lock.withdraw()).to.be.revertedWith(
-  //         "You can't withdraw yet"
-  //       );
-  //     });
-
-  //     it("Should revert with the right error if called from another account", async function () {
-  //       const { lock, unlockTime, otherAccount } = await loadFixture(
-  //         deployOneYearLockFixture
-  //       );
-
-  //       // We can increase the time in Hardhat Network
-  //       await time.increaseTo(unlockTime);
-
-  //       // We use lock.connect() to send a transaction from another account
-  //       await expect(lock.connect(otherAccount).withdraw()).to.be.revertedWith(
-  //         "You aren't the owner"
-  //       );
-  //     });
-
-  //     it("Shouldn't fail if the unlockTime has arrived and the owner calls it", async function () {
-  //       const { lock, unlockTime } = await loadFixture(
-  //         deployOneYearLockFixture
-  //       );
-
-  //       // Transactions are sent using the first signer by default
-  //       await time.increaseTo(unlockTime);
-
-  //       await expect(lock.withdraw()).not.to.be.reverted;
-  //     });
-  //   });
-
-  // describe("Events", function () {
-  //   it("Should emit an event on withdrawals", async function () {
-  //     const { lock, unlockTime, lockedAmount } = await loadFixture(
-  //       deployOneYearLockFixture
-  //     );
-
-  //     await time.increaseTo(unlockTime);
-
-  //     await expect(lock.withdraw())
-  //       .to.emit(lock, "Withdrawal")
-  //       .withArgs(lockedAmount, anyValue); // We accept any value as `when` arg
-  //   });
-  // });
-
-  // describe("Transfers", function () {
-  //   it("Should transfer the funds to the owner", async function () {
-  //     const { lock, unlockTime, lockedAmount, owner } = await loadFixture(
-  //       deployOneYearLockFixture
-  //     );
-
-  //     await time.increaseTo(unlockTime);
-
-  //     await expect(lock.withdraw()).to.changeEtherBalances(
-  //       [owner, lock],
-  //       [lockedAmount, -lockedAmount]
-  //     );
-  //   });
-  // });
-  // });
+      staking.connect(acc1).claim();
+      expect(await staking.getRewards(acc1.address)).to.be.equal(0);
+    });
+  });
 });

@@ -8,8 +8,10 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 contract StakingRewards is AccessControl {
     /* ======================= STATE VARS ======================= */
 
-    uint256 public immutable _rewardRate = 1;
-    uint256 public immutable _minStakingTime = 1 weeks;
+    uint256 weekInSeconds = 7 * 24 * 60 * 60;
+
+    uint256 public immutable _rewardRate = weekInSeconds;
+    uint256 public immutable _minStakingTime = weekInSeconds;
 
     IERC20 public immutable stakingToken;
     ERC20 public immutable rewardsToken;
@@ -53,8 +55,7 @@ contract StakingRewards is AccessControl {
 
     modifier verifyStakingTime() {
         require(
-            stakers[msg.sender].lastStakedAt + minStakingTime * 1 weeks <
-                block.timestamp,
+            stakers[msg.sender].lastStakedAt + minStakingTime < block.timestamp,
             "stake in progress"
         );
         _;
@@ -62,8 +63,7 @@ contract StakingRewards is AccessControl {
 
     modifier updateReward(address staker) {
         require(
-            stakers[staker].lastStakedAt + minStakingTime * 1 weeks <
-                block.timestamp,
+            stakers[staker].lastStakedAt + minStakingTime < block.timestamp,
             "stake in progress"
         );
         stakers[staker].reward = _calculateReward(msg.sender);
@@ -106,10 +106,7 @@ contract StakingRewards is AccessControl {
     }
 
     function unstake(uint256 amount) external verifyStakingTime returns (bool) {
-        require(
-            stakers[msg.sender].stake >= amount,
-            "Claimed amount exceeds the stake"
-        );
+        require(stakers[msg.sender].stake >= amount, "funds insufficient");
         stakingToken.transfer(msg.sender, amount);
         stakers[msg.sender].stake -= amount;
         emit Unstake(msg.sender, amount);
