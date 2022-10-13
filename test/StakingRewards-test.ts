@@ -11,9 +11,9 @@ describe("Tests for StakingRewards Contract as:", function () {
   async function deployStakingRewards() {
     const [owner, acc1, acc2] = await ethers.getSigners();
 
-    const ERC20 = await ethers.getContractFactory("ERC20token");
-    const stakingToken = await ERC20.deploy();
-    const rewardToken = await ERC20.deploy();
+    const ERC20 = await ethers.getContractFactory("TokenERC20");
+    const stakingToken = await ERC20.deploy("stakingToken", "LP");
+    const rewardToken = await ERC20.deploy("rewardToken", "RT");
 
     // const WETH = await ethers.getContractFactory("WETH");
     // const stakingToken = await WETH.deploy(owner.address);
