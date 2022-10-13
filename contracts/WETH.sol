@@ -9,16 +9,6 @@ contract WETH is ERC20("Wrapped Ether", "WETH") {
 
     /* ======================= EVENTS ======================= */
 
-    event Deposit(address indexed from, uint256 amount);
-
-    event Withdrawal(address indexed to, uint256 amount);
-
-    /* ======================= CONSTRUCTOR ======================= */
-
-    constructor(address _stakingContract) {
-        owner = _stakingContract;
-    }
-
     /* ======================= MODIFIERS ======================= */
 
     modifier onlyOwner() {
@@ -31,18 +21,17 @@ contract WETH is ERC20("Wrapped Ether", "WETH") {
     function deposit() public payable virtual onlyOwner {
         _mint(msg.sender, msg.value);
 
-        emit Deposit(msg.sender, msg.value);
+        emit Transfer(address(0), msg.sender, msg.value);
     }
 
     function withdraw(uint256 amount) public virtual onlyOwner {
         _burn(msg.sender, amount);
 
         payable(msg.sender).transfer(amount);
-
-        emit Withdrawal(msg.sender, amount);
+        emit Transfer(msg.sender, address(0), amount);
     }
 
-    // receive() external payable virtual {
-    //     deposit();
-    // }
+    receive() external payable virtual {
+        deposit();
+    }
 }

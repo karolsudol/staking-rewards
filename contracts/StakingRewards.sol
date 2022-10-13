@@ -10,7 +10,9 @@ contract StakingRewards is AccessControl {
 
     uint256 weekInSeconds = 7 * 24 * 60 * 60;
 
-    uint256 public immutable _rewardRate = weekInSeconds;
+    // 1 token every week per 100 LP tokens
+
+    uint256 public immutable _rewardRate = 100;
     uint256 public immutable _minStakingTime = weekInSeconds;
 
     IERC20 public immutable stakingToken;
@@ -34,11 +36,11 @@ contract StakingRewards is AccessControl {
 
     constructor(address _stakingToken, address _rewardsToken) {
         owner = msg.sender;
-        stakingToken = IERC20(_stakingToken);
-        rewardsToken = ERC20(_rewardsToken);
+        stakingToken = IERC20(_stakingToken); // address LP tkns -> metamask -> unique to LP
+        rewardsToken = ERC20(_rewardsToken); // last week erc20
         rewardRate = _rewardRate;
         minStakingTime = _minStakingTime;
-        rewardStartAt = _minStakingTime;
+        rewardStartAt = weekInSeconds;
     }
 
     /* ======================= Events ======================= */

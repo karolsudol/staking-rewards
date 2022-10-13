@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 
-const OWNER_ADDRESS = process.env.OWNER_ADDRESS;
+const OWNER_ADDRESS = process.env.OWNER_ADDRESS!;
 const STAKING_TOKEN_ADDRESS: string = process.env.STAKING_TOKEN_ADDRESS!;
 const REWARD_TOKEN_ADDRESS: string = process.env.REWARD_TOKEN_ADDRESS!;
 
