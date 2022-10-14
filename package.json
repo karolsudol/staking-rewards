@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/Chainboard-Academy/liquidity-pools-and-staking-karolsudol#readme",
   "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.4",
     "@nomicfoundation/hardhat-toolbox": "^2.0.0",
     "@openzeppelin/contracts": "^4.7.3",
     "dotenv": "^16.0.3",
