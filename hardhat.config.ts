@@ -2,6 +2,7 @@ import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 
 import "./tasks/WETH-tasks.ts";
+import "./tasks/ERC20-tasks.ts";
 import * as dotenv from "dotenv";
 dotenv.config();
 
