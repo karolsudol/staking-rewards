@@ -8,15 +8,15 @@ const WETH_CONTRACT_ADDRESS: string = process.env
 
 task("deposit", "deposit eth")
   .addParam("amount", "deposit amount")
-  .addParam("account", "user address")
+  // .addParam("account", "user address")
   .setAction(async (taskArgs: { amount: any; account: any }, hre) => {
     const weth = await hre.ethers.getContractAt("WETH", WETH_CONTRACT_ADDRESS);
     const account = await hre.ethers.getSigners();
     const amount = hre.ethers.utils.parseUnits(taskArgs.amount, 18);
 
-    await weth.connect(account[1]).approve(weth.address, amount);
+    await weth.connect(account[0]).approve(weth.address, amount);
     console.log("approve completed");
-    let result = await weth.connect(account[1]).deposit({ value: amount });
+    let result = await weth.connect(account[0]).deposit({ value: amount });
     console.log("deposit completed");
     console.log(result);
   });
