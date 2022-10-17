@@ -3,6 +3,7 @@ import "@nomicfoundation/hardhat-toolbox";
 
 import "./tasks/WETH-tasks.ts";
 import "./tasks/ERC20-tasks.ts";
+import "./tasks/staking-tasks.ts";
 import * as dotenv from "dotenv";
 dotenv.config();
 
@@ -19,6 +20,8 @@ const config: HardhatUserConfig = {
     },
     goerli: {
       url: GOERLI_URL || "",
+      allowUnlimitedContractSize: true,
+      blockGasLimit: 100000000429720,
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
