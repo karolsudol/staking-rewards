@@ -41,7 +41,7 @@ describe("CONTRACT:WETH", function () {
         await weth.balanceOf(acc1.address)
       );
 
-      expect(await weth.connect(acc1).withdraw(10))
+      expect(await weth.connect(acc1).withdraw(1000))
         .emit(weth, "Transfer")
         .withArgs("0x", acc1.address, 10);
 

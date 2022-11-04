@@ -120,12 +120,12 @@ contract StakingRewards is AccessControl {
 
     function _calculateReward(address staker) internal returns (uint256) {
         uint256 coefficient = (block.timestamp - stakers[staker].lastStakedAt) /
-            (rewardStartAt * 1 minutes);
+            (rewardStartAt * 1 weeks);
 
         for (uint256 i = 0; i < coefficient; i++) {
             stakers[staker].reward +=
                 (stakers[staker].stake * rewardRate) /
-                10000;
+                100;
         }
         return stakers[staker].reward;
     }
